@@ -210,6 +210,9 @@ class CompositionPlayList(Asset):
 			reel.yield_cpl_SMPTE(reellist)
 
 		_xml = etree.tostring(cpl, pretty_print=True, xml_declaration=True, standalone=None, encoding='UTF-8')
+		self.size = len(_xml)
+		self.digest = dcp_digest(_xml)
+		return _xml
 
 	def xml_Interop(self):
 		title = escape(self.title.encode('ascii', 'xmlcharrefreplace'))
@@ -234,10 +237,14 @@ class CompositionPlayList(Asset):
 			reel.yield_cpl_Interop(reellist)
 
 		_xml = etree.tostring(cpl, pretty_print=True, xml_declaration=True, standalone=None, encoding='UTF-8')
+		self.size = len(_xml)
 		self.digest = dcp_digest(_xml)
-		self.digest = dcp_digest(_xml)
+		return _xml
 	
 	def write_SMPTE(self):
+		pass
+	
+	def write_Interop(self):
 		pass
 
 	def yield_pkl_SMPTE(self, head_element):
@@ -261,12 +268,33 @@ class PackingList(Asset):
 		etree.SubElement(pkl, 'IssueDate'        ).text = ISSUEDATE
 		etree.SubElement(pkl, 'Issuer'           ).text = ISSUER
 		etree.SubElement(pkl, 'Creator'          ).text = CREATOR
+		etree.SubElement(pkl, 'Annotation' )
 
 		_assetlist = etree.SubElement(pkl, 'AssetList')
 
 		for asset in self.assets:
 			_asset = etree.SubElement(_assetlist, 'Asset')
 			asset.yield_pkl_SMPTE(_asset)
+
+		_xml = etree.tostring(pkl, pretty_print=True, xml_declaration=True, standalone=True, encoding='UTF-8')
+		self.size=len(_xml)
+		self.digest=dcp_digest(_xml)
+		return _xml
+	
+	def xml_Interop(self):
+		pkl = etree.Element('{http://www.smpte-ra.org/schemas/429-8/2007/PKL}PackingList', 
+		                    nsmap={None: 'http://www.smpte-ra.org/schemas/429-8/2007/PKL'})
+		etree.SubElement(pkl, 'Id'               ).text = 'urn:uuid:' + self.UUID
+		etree.SubElement(pkl, 'IssueDate'        ).text = ISSUEDATE
+		etree.SubElement(pkl, 'Issuer'           ).text = ISSUER
+		etree.SubElement(pkl, 'Creator'          ).text = CREATOR
+		etree.SubElement(pkl, 'Annotation' )
+
+		_assetlist = etree.SubElement(pkl, 'AssetList')
+
+		for asset in self.assets:
+			_asset = etree.SubElement(_assetlist, 'Asset')
+			asset.yield_pkl_Interop(_asset)
 
 		_xml = etree.tostring(pkl, pretty_print=True, xml_declaration=True, standalone=True, encoding='UTF-8')
 		self.size=len(_xml)
@@ -279,7 +307,7 @@ class PackingList(Asset):
 		etree.SubElement(_asset, 'PackingList').text = 'true'
 		yield_ChunkList_SMPTE(_asset)
 	
-	def yield_am_SMPTE(self, head_element):
+	def yield_am_Interop(self, head_element):
 		_asset = etree.SubElement(head_element, 'Asset')
 		etree.SubElement(_asset, 'Id').text = 'urn:uuid:' + self.UUID
 		etree.SubElement(_asset, 'PackingList')
@@ -363,7 +391,7 @@ class Reel(object):
 
 
 class Assetmap(object):
-	def __init__(self, assets=list())
+	def __init__(self, assets=list()):
 		self.assets = assets
 		self.UUID = asdcp_genuuid()
 		self.volumecount = 1
