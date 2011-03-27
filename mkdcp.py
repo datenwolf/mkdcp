@@ -187,7 +187,8 @@ class CompositionPlayList(Asset):
 		title = escape(self.title.encode('ascii', 'xmlcharrefreplace'))
 
 		# CPL head
-		cpl = etree.Element('{http://www.smpte-ra.org/schemas/429-7/2006/CPL}CompositionPlaylist', nsmap={None: 'http://www.smpte-ra.org/schemas/429-7/2006/CPL'})
+		cpl = etree.Element('{http://www.smpte-ra.org/schemas/429-7/2006/CPL}CompositionPlaylist', 
+		                    nsmap={None: 'http://www.smpte-ra.org/schemas/429-7/2006/CPL'})
 
 		etree.SubElement(cpl, 'Id'               ).text = 'urn:uuid:' + self.UUID
 		etree.SubElement(cpl, 'IssueDate'        ).text = ISSUEDATE
@@ -214,7 +215,8 @@ class CompositionPlayList(Asset):
 		title = escape(self.title.encode('ascii', 'xmlcharrefreplace'))
 
 		# CPL head
-		cpl = etree.Element('{http://www.digicine.com/PROTO-ASDCP-CPL-20040511#}CompositionPlaylist', nsmap={None: 'http://www.digicine.com/PROTO-ASDCP-CPL-20040511#'})
+		cpl = etree.Element('{http://www.digicine.com/PROTO-ASDCP-CPL-20040511#}CompositionPlaylist', 
+		                    nsmap={None: 'http://www.digicine.com/PROTO-ASDCP-CPL-20040511#'})
 
 		etree.SubElement(cpl, 'Id'               ).text = 'urn:uuid:' + self.UUID
 		etree.SubElement(cpl, 'IssueDate'        ).text = ISSUEDATE
@@ -253,7 +255,8 @@ class PackingList(Asset):
 		self.targetfilename = self.UUID + '_pkl.xml'
 
 	def xml_SMPTE(self):
-		pkl = etree.Element('{http://www.smpte-ra.org/schemas/429-8/2007/PKL}PackingList', nsmap={None: 'http://www.smpte-ra.org/schemas/429-8/2007/PKL'})
+		pkl = etree.Element('{http://www.smpte-ra.org/schemas/429-8/2007/PKL}PackingList', 
+		                    nsmap={None: 'http://www.smpte-ra.org/schemas/429-8/2007/PKL'})
 		etree.SubElement(pkl, 'Id'               ).text = 'urn:uuid:' + self.UUID
 		etree.SubElement(pkl, 'IssueDate'        ).text = ISSUEDATE
 		etree.SubElement(pkl, 'Issuer'           ).text = ISSUER
@@ -366,7 +369,8 @@ class Assetmap(object):
 		self.volumecount = 1
 	
 	def xml_SMPTE(self):
-		assetmap = etree.Element('{http://www.smpte-ra.org/schemas/429-9/2007/AM}AssetMap', nsmap={None: 'http://www.smpte-ra.org/schemas/429-9/2007/AM'})
+		assetmap = etree.Element('{http://www.smpte-ra.org/schemas/429-9/2007/AM}AssetMap', 
+		                         nsmap={None: 'http://www.smpte-ra.org/schemas/429-9/2007/AM'})
 		assetlist = etree.SubElement(assetmap, 'AssetList')
 		for asset in assets:
 			asset.yield_am_SMPTE(assetlist)
@@ -375,7 +379,9 @@ class Assetmap(object):
 		return _xml
 	
 	def xml_Interop(self):
-		assetmap = etree.Element('{http://www.digicine.com/PROTO-ASDCP-AM-20040311#}AssetMap', nsmap={None: 'http://www.digicine.com/PROTO-ASDCP-AM-20040311#', 'xsi': 'http://www.w3.org/2001/XMLSchema-instance'})
+		assetmap = etree.Element('{http://www.digicine.com/PROTO-ASDCP-AM-20040311#}AssetMap', 
+		                         nsmap={None: 'http://www.digicine.com/PROTO-ASDCP-AM-20040311#', 
+					 'xsi': 'http://www.w3.org/2001/XMLSchema-instance'})
 		assetlist = etree.SubElement(assetmap, 'AssetList')
 		for asset in assets:
 			asset.yield_am_Interop(assetlist)
@@ -385,7 +391,8 @@ class Assetmap(object):
 
 class VolumeIndex(object):
 	def xml_SMPTE(self):
-		_volumeindex = etree.Element('{http://www.smpte-ra.org/schemas/429-9/2007/AM}VolumeIndex', nsmap={None: 'http://www.smpte-ra.org/schemas/429-9/2007/AM'})
+		_volumeindex = etree.Element('{http://www.smpte-ra.org/schemas/429-9/2007/AM}VolumeIndex', 
+		                             nsmap={None: 'http://www.smpte-ra.org/schemas/429-9/2007/AM'})
 		etree.SubElement(_volumeindex, 'Index').text = '1'
 
 		_xml = etree.tostring(_volumeindex, pretty_print=True, xml_declaration=True, standalone=True, encoding='UTF-8')
