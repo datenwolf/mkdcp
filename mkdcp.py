@@ -120,6 +120,13 @@ class Asset(object):
 		etree.SubElement(head_element, 'Size'              ).text = '%d' % (self.size,)
 		etree.SubElement(head_element, 'OriginalFilename'  ).text = self.targetfilename # the PKL original filename is our target filename!
 	
+	def yield_pkl_Interop(self, head_element):
+		etree.SubElement(head_element, 'Id'                ).text = 'urn:uuid:' + self.UUID
+		etree.SubElement(head_element, 'AnnotationText'    ).text = escape(self.annotation.encode('ascii', 'xmlcharrefreplace'))
+		etree.SubElement(head_element, 'Hash'              ).text = self.digest
+		etree.SubElement(head_element, 'Size'              ).text = '%d' % (self.size,)
+		etree.SubElement(head_element, 'OriginalFilename'  ).text = self.targetfilename # the PKL original filename is our target filename!
+	
 	def yield_am_SMPTE(self, head_element):
 		_asset = etree.SubElement(head_element, 'Asset')
 		etree.SubElement(_asset, 'Id').text = 'urn:uuid:' + self.UUID
@@ -133,6 +140,15 @@ class Asset(object):
 		etree.SubElement(_chunk, 'Offset').text = '0'
 		etree.SubElement(_chunk, 'Length').text = '%d' % (self.size,)
 		
+	def yield_am_Interop(self, head_element):
+		_asset = etree.SubElement(head_element, 'Asset')
+		etree.SubElement(_asset, 'Id').text = 'urn:uuid:' + self.UUID
+		yield_ChunkList_Interop(_asset)
+
+	def yield_ChunkList_Interop(self, head_element):
+		_chunklist = etree.SubElement(head_element, 'ChunkList')
+		_chunk = etree.SubElement(_chunklist, 'Chunk')
+		etree.SubElement(_chunk, 'Path').text = self.targetfilename
 		
 class Track(Asset):
 	def __init__(self):
@@ -140,6 +156,15 @@ class Track(Asset):
 		self.entrypoint = 0
 
 	def yield_cpl_SMPTE(self, head_element):
+		etree.SubElement(head_element, 'Id'                ).text = 'urn:uuid:' + self.UUID
+		etree.SubElement(head_element, 'AnnotationText'    ).text = escape(self.annotation.encode('ascii', 'xmlcharrefreplace'))
+		etree.SubElement(head_element, 'Hash'              ).text = self.digest
+		etree.SubElement(head_element, 'EditRate'          ).text = '%d %d' % self.editrate
+		etree.SubElement(head_element, 'EntryPoint'        ).text = '%d' % (self.entrypoint,)
+		etree.SubElement(head_element, 'IntrinsicDuration' ).text = '%d' % (self.intrinsicduration,)
+		etree.SubElement(head_element, 'Duration'          ).text = '%d' % (self.duration,)
+	
+	def yield_cpl_Interop(self, head_element):
 		etree.SubElement(head_element, 'Id'                ).text = 'urn:uuid:' + self.UUID
 		etree.SubElement(head_element, 'AnnotationText'    ).text = escape(self.annotation.encode('ascii', 'xmlcharrefreplace'))
 		etree.SubElement(head_element, 'Hash'              ).text = self.digest
@@ -184,6 +209,30 @@ class CompositionPlayList(Asset):
 			reel.yield_cpl_SMPTE(reellist)
 
 		_xml = etree.tostring(cpl, pretty_print=True, xml_declaration=True, standalone=None, encoding='UTF-8')
+
+	def xml_Interop(self):
+		title = escape(self.title.encode('ascii', 'xmlcharrefreplace'))
+
+		# CPL head
+		cpl = etree.Element('{http://www.digicine.com/PROTO-ASDCP-CPL-20040511#}CompositionPlaylist', nsmap={None: 'http://www.digicine.com/PROTO-ASDCP-CPL-20040511#'})
+
+		etree.SubElement(cpl, 'Id'               ).text = 'urn:uuid:' + self.UUID
+		etree.SubElement(cpl, 'IssueDate'        ).text = ISSUEDATE
+		etree.SubElement(cpl, 'Issuer'           ).text = ISSUER
+		etree.SubElement(cpl, 'Creator'          ).text = CREATOR
+		etree.SubElement(cpl, 'ContentTitleText' ).text = title
+		etree.SubElement(cpl, 'ContentKind'      ).text = self.kind
+
+		etree.SubElement(cpl, 'RatingList')
+
+		# Reels
+		reellist = etree.SubElement(cpl, 'ReelList')
+
+		for reel in self.reels:
+			reel.yield_cpl_Interop(reellist)
+
+		_xml = etree.tostring(cpl, pretty_print=True, xml_declaration=True, standalone=None, encoding='UTF-8')
+		self.digest = dcp_digest(_xml)
 		self.digest = dcp_digest(_xml)
 	
 	def write_SMPTE(self):
@@ -192,6 +241,10 @@ class CompositionPlayList(Asset):
 	def yield_pkl_SMPTE(self, head_element):
 		super(CompositionPlayList, self).yield_pkl_SMPTE(head_element)
 		etree.SubElement(head_element, 'Type').text = 'text/xml'
+	
+	def yield_pkl_Interop(self, head_element):
+		super(CompositionPlayList, self).yield_pkl_Interop(head_element)
+		etree.SubElement(head_element, 'Type').text = 'text/xml;asdcpKind=CPL'
 
 class PackingList(Asset):
 	def __init__(self, assets=list()):
@@ -222,6 +275,12 @@ class PackingList(Asset):
 		etree.SubElement(_asset, 'Id').text = 'urn:uuid:' + self.UUID
 		etree.SubElement(_asset, 'PackingList').text = 'true'
 		yield_ChunkList_SMPTE(_asset)
+	
+	def yield_am_SMPTE(self, head_element):
+		_asset = etree.SubElement(head_element, 'Asset')
+		etree.SubElement(_asset, 'Id').text = 'urn:uuid:' + self.UUID
+		etree.SubElement(_asset, 'PackingList')
+		yield_ChunkList_Interop(_asset)
 
 class SoundTrack(Track):
 	def __init__(self):
@@ -231,9 +290,17 @@ class SoundTrack(Track):
 		asset = etree.SubElement(head_element, 'MainSound')
 		super(SoundTrack, self).yield_cpl_SMPTE(asset)
 
+	def yield_cpl_Interop(self, head_element):
+		asset = etree.SubElement(head_element, 'MainSound')
+		super(SoundTrack, self).yield_cpl_Interop(asset)
+
 	def yield_pkl_SMPTE(self, head_element):
 		super(SoundTrack, self).yield_pkl_SMPTE(head_element)
 		etree.SubElement(head_element, 'Type').text = 'application/mxf'
+	
+	def yield_pkl_Interop(self, head_element):
+		super(SoundTrack, self).yield_pkl_Interop(head_element)
+		etree.SubElement(head_element, 'Type').text = 'application/x-smpte-mxf;asdcpKind=Sound'
 
 class PictureTrack(Track):
 	def __init__(self, stereoscopic = False):
@@ -248,15 +315,29 @@ class PictureTrack(Track):
 				nsmap={'msp-cpl': 'http://www.smpte-ra.org/schemas/429-10/2008/Main-Stereo-Picture-CPL'} )
 		else:
 			asset = etree.SubElement(head_element, 'MainPicture')
-
 		super(PictureTrack, self).yield_cpl_SMPTE(asset)
-
 		etree.SubElement(asset, 'FrameRate').text = '%d %d' % self.framerate
 		etree.SubElement(asset, 'ScreenAspectRatio').text = '%d %d' % self.aspectratio
+	
+	def yield_cpl_Interop(self, head_element):
+		if self.stereoscopic:
+			asset = etree.SubElement(
+				head_element, 
+				'{http://www.digicine.com/PROTO-ASDCP-CPL-20040511#}MainStereoscopicPicture', 
+				nsmap={'msp-cpl': 'http://www.digicine.com/PROTO-ASDCP-CPL-20040511#'} )
+		else:
+			asset = etree.SubElement(head_element, 'MainPicture')
+		super(PictureTrack, self).yield_cpl_Interop(asset)
+		etree.SubElement(asset, 'FrameRate').text = '%d %d' % self.framerate
+		etree.SubElement(asset, 'ScreenAspectRatio').text = '%.2f' % (float(self.aspectratio[0])/float(self.aspectratio[1]),)
 
 	def yield_pkl_SMPTE(self, head_element):
 		super(PictureTrack, self).yield_pkl_SMPTE(head_element)
 		etree.SubElement(head_element, 'Type').text = 'application/mxf'
+	
+	def yield_pkl_Interop(self, head_element):
+		super(PictureTrack, self).yield_pkl_Interop(head_element)
+		etree.SubElement(head_element, 'Type').text = 'application/x-smpte-mxf;asdcpKind=Picture'
 
 class Reel(object):
 	def __init__(self, assets=list()):
@@ -267,10 +348,15 @@ class Reel(object):
 		reel = etree.SubElement(head_element, 'Reel')
 		etree.SubElement(reel, 'Id').text = 'urn:uuid:' + self.UUID
 		assetlist = etree.SubElement(reel, 'AssetList')
-		
 		for asset in self.assets:
 			asset.yield_cpl_SMPTE(reel)
 
+	def yield_cpl_Interop(self, head_element):
+		reel = etree.SubElement(head_element, 'Reel')
+		etree.SubElement(reel, 'Id').text = 'urn:uuid:' + self.UUID
+		assetlist = etree.SubElement(reel, 'AssetList')	
+		for asset in self.assets:
+			asset.yield_cpl_Interop(reel)
 
 
 class Assetmap(object):
@@ -284,6 +370,15 @@ class Assetmap(object):
 		assetlist = etree.SubElement(assetmap, 'AssetList')
 		for asset in assets:
 			asset.yield_am_SMPTE(assetlist)
+
+		_xml = etree.tostring(assetmap, pretty_print=True, xml_declaration=True, standalone=True, encoding='UTF-8')
+		return _xml
+	
+	def xml_Interop(self):
+		assetmap = etree.Element('{http://www.digicine.com/PROTO-ASDCP-AM-20040311#}AssetMap', nsmap={None: 'http://www.digicine.com/PROTO-ASDCP-AM-20040311#', 'xsi': 'http://www.w3.org/2001/XMLSchema-instance'})
+		assetlist = etree.SubElement(assetmap, 'AssetList')
+		for asset in assets:
+			asset.yield_am_Interop(assetlist)
 
 		_xml = etree.tostring(assetmap, pretty_print=True, xml_declaration=True, standalone=True, encoding='UTF-8')
 		return _xml
