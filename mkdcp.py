@@ -130,7 +130,7 @@ class Asset(object):
 	def yield_am_SMPTE(self, head_element):
 		_asset = etree.SubElement(head_element, 'Asset')
 		etree.SubElement(_asset, 'Id').text = 'urn:uuid:' + self.UUID
-		yield_ChunkList_SMPTE(_asset)
+		self.yield_ChunkList_SMPTE(_asset)
 
 	def yield_ChunkList_SMPTE(self, head_element):
 		_chunklist = etree.SubElement(head_element, 'ChunkList')
@@ -143,7 +143,7 @@ class Asset(object):
 	def yield_am_Interop(self, head_element):
 		_asset = etree.SubElement(head_element, 'Asset')
 		etree.SubElement(_asset, 'Id').text = 'urn:uuid:' + self.UUID
-		yield_ChunkList_Interop(_asset)
+		self.yield_ChunkList_Interop(_asset)
 
 	def yield_ChunkList_Interop(self, head_element):
 		_chunklist = etree.SubElement(head_element, 'ChunkList')
@@ -282,8 +282,10 @@ class PackingList(Asset):
 		return _xml
 	
 	def xml_Interop(self):
-		pkl = etree.Element('{http://www.smpte-ra.org/schemas/429-8/2007/PKL}PackingList', 
-		                    nsmap={None: 'http://www.smpte-ra.org/schemas/429-8/2007/PKL'})
+		pkl = etree.Element('{http://www.digicine.com/PROTO-ASDCP-PKL-20040311#}PackingList',
+		                    attrib={'{http://www.w3.org/2001/XMLSchema-instance}schemaLocation': 'http://www.digicine.com/PROTO-ASDCP-PKL-20040311# PackingList.xsd'},
+		                    nsmap={None: 'http://www.digicine.com/PROTO-ASDCP-PKL-20040311#',
+				           'xsi': 'http://www.w3.org/2001/XMLSchema-instance'})
 		etree.SubElement(pkl, 'Id'               ).text = 'urn:uuid:' + self.UUID
 		etree.SubElement(pkl, 'IssueDate'        ).text = ISSUEDATE
 		etree.SubElement(pkl, 'Issuer'           ).text = ISSUER
@@ -305,13 +307,13 @@ class PackingList(Asset):
 		_asset = etree.SubElement(head_element, 'Asset')
 		etree.SubElement(_asset, 'Id').text = 'urn:uuid:' + self.UUID
 		etree.SubElement(_asset, 'PackingList').text = 'true'
-		yield_ChunkList_SMPTE(_asset)
+		self.yield_ChunkList_SMPTE(_asset)
 	
 	def yield_am_Interop(self, head_element):
 		_asset = etree.SubElement(head_element, 'Asset')
 		etree.SubElement(_asset, 'Id').text = 'urn:uuid:' + self.UUID
 		etree.SubElement(_asset, 'PackingList')
-		yield_ChunkList_Interop(_asset)
+		self.yield_ChunkList_Interop(_asset)
 
 class SoundTrack(Track):
 	def __init__(self):
@@ -354,8 +356,8 @@ class PictureTrack(Track):
 		if self.stereoscopic:
 			asset = etree.SubElement(
 				head_element, 
-				'{http://www.digicine.com/PROTO-ASDCP-CPL-20040511#}MainStereoscopicPicture', 
-				nsmap={'msp-cpl': 'http://www.digicine.com/PROTO-ASDCP-CPL-20040511#'} )
+				'{http://www.digicine.com/schemas/437-Y/2007/Main-Stereo-Picture-CPL}MainStereoscopicPicture', 
+				nsmap={'msp-cpl': 'http://www.digicine.com/schemas/437-Y/2007/Main-Stereo-Picture-CPL'} )
 		else:
 			asset = etree.SubElement(head_element, 'MainPicture')
 		super(PictureTrack, self).yield_cpl_Interop(asset)
@@ -376,18 +378,18 @@ class Reel(object):
 		self.assets = assets
 	
 	def yield_cpl_SMPTE(self, head_element):
-		reel = etree.SubElement(head_element, 'Reel')
-		etree.SubElement(reel, 'Id').text = 'urn:uuid:' + self.UUID
-		assetlist = etree.SubElement(reel, 'AssetList')
+		_reel = etree.SubElement(head_element, 'Reel')
+		etree.SubElement(_reel, 'Id').text = 'urn:uuid:' + self.UUID
+		_assetlist = etree.SubElement(_reel, 'AssetList')
 		for asset in self.assets:
-			asset.yield_cpl_SMPTE(reel)
+			asset.yield_cpl_SMPTE(_assetlist)
 
 	def yield_cpl_Interop(self, head_element):
-		reel = etree.SubElement(head_element, 'Reel')
-		etree.SubElement(reel, 'Id').text = 'urn:uuid:' + self.UUID
-		assetlist = etree.SubElement(reel, 'AssetList')	
+		_reel = etree.SubElement(head_element, 'Reel')
+		etree.SubElement(_reel, 'Id').text = 'urn:uuid:' + self.UUID
+		_assetlist = etree.SubElement(_reel, 'AssetList')	
 		for asset in self.assets:
-			asset.yield_cpl_Interop(reel)
+			asset.yield_cpl_Interop(_assetlist)
 
 
 class Assetmap(object):
@@ -397,24 +399,35 @@ class Assetmap(object):
 		self.volumecount = 1
 	
 	def xml_SMPTE(self):
-		assetmap = etree.Element('{http://www.smpte-ra.org/schemas/429-9/2007/AM}AssetMap', 
+		_assetmap = etree.Element('{http://www.smpte-ra.org/schemas/429-9/2007/AM}AssetMap', 
 		                         nsmap={None: 'http://www.smpte-ra.org/schemas/429-9/2007/AM'})
-		assetlist = etree.SubElement(assetmap, 'AssetList')
-		for asset in assets:
-			asset.yield_am_SMPTE(assetlist)
+		etree.SubElement(_assetmap, 'Id'          ).text = self.UUID
+		etree.SubElement(_assetmap, 'VolumeCount' ).text = '1'
+		etree.SubElement(_assetmap, 'IssueDate'   ).text = ISSUEDATE
+		etree.SubElement(_assetmap, 'Issuer'      ).text = ISSUER
+		etree.SubElement(_assetmap, 'Creator'     ).text = CREATOR
+		_assetlist = etree.SubElement(_assetmap, 'AssetList')
+		for asset in self.assets:
+			asset.yield_am_SMPTE(_assetlist)
 
-		_xml = etree.tostring(assetmap, pretty_print=True, xml_declaration=True, standalone=True, encoding='UTF-8')
+		_xml = etree.tostring(_assetmap, pretty_print=True, xml_declaration=True, standalone=True, encoding='UTF-8')
 		return _xml
 	
 	def xml_Interop(self):
-		assetmap = etree.Element('{http://www.digicine.com/PROTO-ASDCP-AM-20040311#}AssetMap', 
-		                         nsmap={None: 'http://www.digicine.com/PROTO-ASDCP-AM-20040311#', 
-					 'xsi': 'http://www.w3.org/2001/XMLSchema-instance'})
-		assetlist = etree.SubElement(assetmap, 'AssetList')
-		for asset in assets:
-			asset.yield_am_Interop(assetlist)
+		_assetmap = etree.Element('{http://www.digicine.com/PROTO-ASDCP-AM-20040311#}AssetMap', 
+		                          attrib={'{http://www.w3.org/2001/XMLSchema-instance}schemaLocation': 'http://www.digicine.com/PROTO-ASDCP-AM-20040311# asset_map.xsd'},
+		                          nsmap={ None: 'http://www.digicine.com/PROTO-ASDCP-AM-20040311#', 
+					         'xsi': 'http://www.w3.org/2001/XMLSchema-instance'})
+		etree.SubElement(_assetmap, 'Id'          ).text = self.UUID
+		etree.SubElement(_assetmap, 'VolumeCount' ).text = '1'
+		etree.SubElement(_assetmap, 'IssueDate'   ).text = ISSUEDATE
+		etree.SubElement(_assetmap, 'Issuer'      ).text = ISSUER
+		etree.SubElement(_assetmap, 'Creator'     ).text = CREATOR
+		_assetlist = etree.SubElement(_assetmap, 'AssetList')
+		for asset in self.assets:
+			asset.yield_am_Interop(_assetlist)
 
-		_xml = etree.tostring(assetmap, pretty_print=True, xml_declaration=True, standalone=True, encoding='UTF-8')
+		_xml = etree.tostring(_assetmap, pretty_print=True, xml_declaration=True, standalone=True, encoding='UTF-8')
 		return _xml
 
 class VolumeIndex(object):
@@ -426,3 +439,12 @@ class VolumeIndex(object):
 		_xml = etree.tostring(_volumeindex, pretty_print=True, xml_declaration=True, standalone=True, encoding='UTF-8')
 		return _xml
 
+	def xml_Interop(self):
+		_volumeindex = etree.Element('{http://www.digicine.com/PROTO-ASDCP-VL-20040311#}VolumeIndex', 
+		                             attrib={'{http://www.w3.org/2001/XMLSchema-instance}schemaLocation': 'http://www.digicine.com/PROTO-ASDCP-VL-20040311# VolumeLabel.xsd'},
+		                             nsmap={None: 'http://www.digicine.com/PROTO-ASDCP-VL-20040311#',
+					            'xsi': 'http://www.w3.org/2001/XMLSchema-instance'} )
+		etree.SubElement(_volumeindex, 'Index').text = '1'
+
+		_xml = etree.tostring(_volumeindex, pretty_print=True, xml_declaration=True, standalone=True, encoding='UTF-8')
+		return _xml
