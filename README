@@ -1,0 +1,8 @@
+=== mkdcp ===
+
+A simple Python script aiding the creation of DCPs (Digital Cinema Packages).
+
+Dependencies:
+* lxml Python module
+* installed asdcp-test tool (ships with asdcp-lib)
+
